@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { WebSocketServer } from 'ws';
-import { HttpError, createRateLimiter, loadStatic, sendError } from './http.js';
+import { HttpError, createRateLimiter, listenLocal, loadStatic, sendError } from './http.js';
 
 const AUTH_TIMEOUT_MS = 5000;
 const MAX_MESSAGE_BYTES = 4096;
@@ -43,6 +43,9 @@ export function createViewerServer({ port, manager, log }) {
   });
 
   const wss = new WebSocketServer({ server, path: '/ws', maxPayload: MAX_MESSAGE_BYTES });
+  // ws re-emits the HTTP server's errors (e.g. EADDRINUSE). listen() already rejects with the
+  // same error and the caller reports it, so this copy must not crash the process.
+  wss.on('error', (err) => log.debug?.(`[viewer] server error (reported by listen): ${err.message}`));
   let pendingAuth = 0;
 
   // Drop dead connections (closed laptops, flaky mobile) so they don't hold viewer slots.
@@ -102,7 +105,7 @@ export function createViewerServer({ port, manager, log }) {
   });
 
   return Object.freeze({
-    listen: () => new Promise((resolve) => server.listen(port, '127.0.0.1', resolve)),
+    listen: () => listenLocal(server, port),
     close: () =>
       new Promise((resolve) => {
         clearInterval(pruneTimer);

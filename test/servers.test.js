@@ -130,3 +130,8 @@ test('viewer websocket authenticates with the token as first message', async () 
   assert.match((await wsExchange('not json')).message, /invalid/);
   assert.match((await wsExchange(JSON.stringify({ token: 'throw' }))).message, /could not be streamed/);
 });
+
+test('listen rejects with EADDRINUSE when the port is taken instead of crashing', async () => {
+  const clash = createViewerServer({ port: VIEWER, manager, log });
+  await assert.rejects(clash.listen(), (err) => err.code === 'EADDRINUSE');
+});

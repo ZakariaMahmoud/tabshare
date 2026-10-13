@@ -27,6 +27,17 @@ async function connectChrome(cdpUrl) {
   }
 }
 
+async function listenOrExplain(server, port, envVar) {
+  try {
+    await server.listen();
+  } catch (err) {
+    if (err.code !== 'EADDRINUSE') throw err;
+    log.error(`[tabshare] port ${port} is already in use by another program.`);
+    log.error(`[tabshare] pick a free one, e.g. ${envVar}=${port + 10} npm start`);
+    process.exit(1);
+  }
+}
+
 async function openPublicUrl(config) {
   if (config.publicUrl) return { url: config.publicUrl, stop: () => {} };
   if (!config.tunnelEnabled) return { url: null, stop: () => {} };
@@ -68,7 +79,8 @@ async function main() {
     getPublicUrl: () => publicUrl,
     log,
   });
-  await Promise.all([viewer.listen(), admin.listen()]);
+  await listenOrExplain(viewer, config.viewerPort, 'TABSHARE_VIEWER_PORT');
+  await listenOrExplain(admin, config.adminPort, 'TABSHARE_ADMIN_PORT');
 
   const tunnel = await openPublicUrl(config).catch((err) => {
     log.error(`[tunnel] ${err.message}`);

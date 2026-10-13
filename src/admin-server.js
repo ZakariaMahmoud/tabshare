@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { summarizeCookieDomains, suggestDomains } from './cookies.js';
-import { HttpError, loadStatic, readJsonBody, sendError, sendJson } from './http.js';
+import { HttpError, listenLocal, loadStatic, readJsonBody, sendError, sendJson } from './http.js';
 import { tokensEqual } from './tokens.js';
 
 const ADMIN_HEADER = 'x-tabshare-admin';
@@ -80,7 +80,7 @@ export function createAdminServer({ port, adminKey, manager, tabs, getUserBrowse
   });
 
   return Object.freeze({
-    listen: () => new Promise((resolve) => server.listen(port, '127.0.0.1', resolve)),
+    listen: () => listenLocal(server, port),
     close: () => new Promise((resolve) => server.close(resolve)),
   });
 }

@@ -3,6 +3,8 @@ const positiveInt = (value, fallback) => {
   return Number.isInteger(n) && n > 0 ? n : fallback;
 };
 
+const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
+
 export function loadConfig(env = process.env) {
   return Object.freeze({
     adminPort: positiveInt(env.TABSHARE_ADMIN_PORT, 7070),
@@ -17,7 +19,8 @@ export function loadConfig(env = process.env) {
     chromeChannel: env.TABSHARE_CHROME_CHANNEL ?? 'chrome',
     // Only disable if Chrome's sandbox cannot start on your system (e.g. some containers).
     chromeSandbox: env.TABSHARE_NO_SANDBOX !== '1',
-    jpegQuality: positiveInt(env.TABSHARE_JPEG_QUALITY, 70),
+    // Chrome's screencast accepts 0–100.
+    jpegQuality: clamp(positiveInt(env.TABSHARE_JPEG_QUALITY, 70), 1, 100),
     viewport: Object.freeze({ width: 1280, height: 800 }),
     limits: Object.freeze({
       defaultTtlMinutes: 30,

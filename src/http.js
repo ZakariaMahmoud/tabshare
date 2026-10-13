@@ -79,6 +79,23 @@ export function readJsonBody(req, limitBytes = 16_384) {
   });
 }
 
+/** Starts listening on 127.0.0.1; rejects (e.g. EADDRINUSE) instead of crashing the process. */
+export function listenLocal(server, port) {
+  return new Promise((resolve, reject) => {
+    const onError = (err) => {
+      server.off('listening', onListening);
+      reject(err);
+    };
+    const onListening = () => {
+      server.off('error', onError);
+      resolve();
+    };
+    server.once('error', onError);
+    server.once('listening', onListening);
+    server.listen(port, '127.0.0.1');
+  });
+}
+
 /** Fixed-window limiter keyed by client (e.g. IP). */
 export function createRateLimiter({ max, windowMs, now = Date.now }) {
   const hits = new Map();
