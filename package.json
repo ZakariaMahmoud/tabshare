@@ -4,6 +4,14 @@
   "description": "Share a Chrome tab with someone remotely over a Cloudflare Tunnel — they get a live view, never your cookies.",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ZakariaMahmoud/tabshare.git"
+  },
+  "homepage": "https://github.com/ZakariaMahmoud/tabshare#readme",
+  "bugs": {
+    "url": "https://github.com/ZakariaMahmoud/tabshare/issues"
+  },
   "bin": { "tabshare": "src/index.js" },
   "engines": { "node": ">=20" },
   "scripts": {

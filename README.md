@@ -13,6 +13,11 @@ You choose **how much** to share for each link:
 | **One-time link** | Only the first person to open the link gets in. |
 | **Expiry / max viewers** | Links stop working after N minutes. You can also revoke a link at any time. |
 
+<p align="center">
+  <img src="docs/images/admin.png" alt="tabshare admin page: pick a tab, choose cookies and control, create a share link" width="49%">
+  <img src="docs/images/viewer.png" alt="What the viewer sees: the shared tab streamed live in their browser" width="49%">
+</p>
+
 > **Cookies never leave your machine.** In every mode the viewer receives only JPEG frames of the
 > rendered page, never cookie values, HTML or network traffic. Including cookies means "render the
 > page as me", not "hand over my session".
@@ -29,14 +34,14 @@ You choose **how much** to share for each link:
 
 ## Requirements
 
-- Node.js 20+
+- Node.js 20+ (22.5+ for `npm run coverage`)
 - Google Chrome (or Chromium)
 - [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)
 
 ## Quick start
 
 ```bash
-git clone https://github.com/<you>/tabshare && cd tabshare
+git clone https://github.com/ZakariaMahmoud/tabshare && cd tabshare
 npm install
 ```
 
@@ -94,6 +99,30 @@ TABSHARE_PUBLIC_URL=https://share.example.com npm start
 
 You can also put [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/) in front of the hostname to require viewers to sign in with email.
 
+## Limitations
+
+- **One tab per link.** To share several tabs, create a link for each.
+- **Isolated shares are a single page.** Popups and links that open a new tab are closed, and
+  downloads are disabled. The viewer can't type an address; they can only follow links on the page.
+- **Mirror mode needs the tab in the foreground.** Chrome slows or pauses rendering for
+  background tabs, so the stream can freeze until you switch back to it.
+- **Keyboard control is limited to safe keys.** Viewers can type, use arrows/Tab/Enter, and use
+  Ctrl/Cmd + A, C, X, Y, Z. Ctrl/Cmd + V is blocked, because it would paste *your* clipboard. Viewers
+  can paste their own text with their usual paste shortcut.
+- **Video is JPEG frames.** It's tuned for reading and clicking, not for watching videos. Raise
+  `TABSHARE_JPEG_QUALITY` for sharper text at the cost of bandwidth.
+
+## Troubleshooting
+
+| Problem | Fix |
+| --- | --- |
+| `port 7070 is already in use by another program` | Pick free ports, e.g. `TABSHARE_ADMIN_PORT=7080 TABSHARE_VIEWER_PORT=7081 npm start`. |
+| The public URL shows **error 530** | The tunnel isn't connected to Cloudflare yet. tabshare waits for the connection before printing the URL. If it times out, your network may block outbound port 7844. |
+| `Chrome NOT connected` on the admin page | Start Chrome with `npm run chrome` first, then restart tabshare. Make sure nothing else is using port 9222. |
+| `401 missing or invalid admin key` | Open the full admin link printed in the terminal, including the `#k=…` part. The key changes every time tabshare restarts. |
+| A tab isn't in the list | Only `http(s)` tabs in the tabshare Chrome window are listed, not your normal Chrome. Click **Refresh**. |
+| Isolated shares fail to start in a container | Chrome's sandbox may be unavailable there. Set `TABSHARE_NO_SANDBOX=1`, and read [SECURITY.md](SECURITY.md) first. |
+
 ## How it works
 
 - tabshare attaches to your Chrome over the DevTools protocol (Playwright `connectOverCDP`).
@@ -115,10 +144,11 @@ Read [SECURITY.md](SECURITY.md) for the threat model. In short:
 
 ```bash
 npm test          # unit + integration tests, no browser needed
-npm run coverage
+npm run coverage  # needs Node 22.5+
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md). Ideas and feature requests are welcome as
+[issues](https://github.com/ZakariaMahmoud/tabshare/issues).
 
 ## License
 
