@@ -147,7 +147,20 @@ async function createShare() {
   }
 }
 
-function renderShare(share) {
+// Share cards are kept between refreshes and updated in place, so the periodic refresh never
+// destroys a button you're about to click or the text you've selected in a link box.
+const shareCards = new Map(); // share id -> { node, badgeRow, badgeKey }
+
+const badgeTexts = (share) => [
+  share.mode,
+  share.includeCookies ? `cookies: ${share.cookieDomains.join(', ')}` : 'no cookies',
+  share.allowControl ? 'control' : 'view only',
+  share.oneTime ? 'one-time' : `max ${share.maxViewers}`,
+  `${share.viewers} watching`,
+  `expires ${new Date(share.expiresAt).toLocaleTimeString()}`,
+];
+
+function createShareCard(share) {
   const link = el('input', { type: 'text', value: share.link, readOnly: true });
   const copy = el('button', { textContent: 'Copy' });
   copy.addEventListener('click', async () => {
@@ -158,30 +171,59 @@ function renderShare(share) {
   const revoke = el('button', { className: 'danger', textContent: 'Stop sharing' });
   revoke.addEventListener('click', async () => {
     revoke.disabled = true;
-    await api(`/api/shares/${share.id}`, { method: 'DELETE' }).catch((err) => alert(err.message));
+    try {
+      await api(`/api/shares/${share.id}`, { method: 'DELETE' });
+    } catch (err) {
+      alert(err.message);
+      revoke.disabled = false;
+    }
     await loadShares();
   });
-  const badges = [
-    share.mode,
-    share.includeCookies ? `cookies: ${share.cookieDomains.join(', ')}` : 'no cookies',
-    share.allowControl ? 'control' : 'view only',
-    share.oneTime ? 'one-time' : `max ${share.maxViewers}`,
-    `${share.viewers} watching`,
-    `expires ${new Date(share.expiresAt).toLocaleTimeString()}`,
-  ].map((t) => el('span', { className: 'badge', textContent: t }));
-  return el('div', { className: 'share' }, [
+  const badgeRow = el('div', { className: 'row' });
+  const node = el('div', { className: 'share' }, [
     el('div', { className: 'tab-title', textContent: share.tabTitle || share.tabUrl }),
-    el('div', { className: 'row' }, badges),
+    badgeRow,
     el('div', { className: 'row' }, [link, copy, revoke]),
   ]);
+  return { node, badgeRow, badgeKey: '' };
+}
+
+function updateBadges(card, share) {
+  const texts = badgeTexts(share);
+  const key = texts.join('\n');
+  if (key === card.badgeKey) return;
+  card.badgeRow.replaceChildren(...texts.map((t) => el('span', { className: 'badge', textContent: t })));
+  card.badgeKey = key;
+}
+
+function renderShares(shares) {
+  const container = $('shares');
+  const liveIds = new Set(shares.map((s) => s.id));
+  for (const [id, card] of shareCards) {
+    if (!liveIds.has(id)) {
+      card.node.remove();
+      shareCards.delete(id);
+    }
+  }
+  for (const share of shares) {
+    let card = shareCards.get(share.id);
+    if (!card) {
+      card = createShareCard(share);
+      shareCards.set(share.id, card);
+      container.append(card.node);
+    }
+    updateBadges(card, share);
+  }
+  $('no-shares').classList.toggle('hidden', shares.length > 0);
 }
 
 async function loadShares() {
   try {
-    const shares = await api('/api/shares');
-    $('shares').replaceChildren(...(shares.length ? shares.map(renderShare) : [el('p', { className: 'muted', textContent: 'No active shares.' })]));
+    renderShares(await api('/api/shares'));
+    $('shares-error').textContent = '';
   } catch (err) {
-    $('shares').replaceChildren(el('p', { className: 'error', textContent: err.message }));
+    // Keep the existing cards visible; just report the problem.
+    $('shares-error').textContent = `Could not refresh shares: ${err.message}`;
   }
 }
 
