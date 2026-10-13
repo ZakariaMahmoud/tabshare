@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Shared tab</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/viewer.js"></script>
+</head>
+<body class="viewer">
+  <div class="bar">
+    <span class="title" id="title">Connecting…</span>
+    <span class="badge" id="mode"></span>
+    <span class="muted" id="expires"></span>
+  </div>
+  <div class="stage">
+    <img id="screen" class="hidden" alt="Shared browser tab" tabindex="0" draggable="false">
+    <p class="message" id="message">Connecting…</p>
+  </div>
+</body>
+</html>

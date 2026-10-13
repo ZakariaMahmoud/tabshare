@@ -1,0 +1,95 @@
+import { normalizeDomain } from './cookies.js';
+import { newId, newToken, tokensEqual } from './tokens.js';
+
+const MODES = new Set(['mirror', 'isolated']);
+const DOMAIN_RE = /^\.?[a-z0-9-]+(\.[a-z0-9-]+)*$/i;
+const TAB_ID_RE = /^[a-f0-9]{12}$/;
+const MAX_DOMAINS = 100;
+
+const fail = (error) => ({ ok: false, error });
+const isInt = (v, min, max) => Number.isInteger(v) && v >= min && v <= max;
+const isValidDomain = (d) =>
+  typeof d === 'string' &&
+  d.length <= 253 &&
+  DOMAIN_RE.test(d) &&
+  (d.replace(/^\./, '').includes('.') || /^\.?localhost$/i.test(d));
+
+function checkTypes(req) {
+  if (!TAB_ID_RE.test(String(req.tabId))) return 'tabId is invalid';
+  if (!MODES.has(req.mode)) return 'mode must be "mirror" or "isolated"';
+  for (const key of ['includeCookies', 'allowControl', 'oneTime']) {
+    if (typeof req[key] !== 'boolean') return `${key} must be a boolean`;
+  }
+  if (!Array.isArray(req.cookieDomains) || req.cookieDomains.length > MAX_DOMAINS) {
+    return `cookieDomains must be an array of at most ${MAX_DOMAINS} domains`;
+  }
+  if (!req.cookieDomains.every(isValidDomain)) return 'cookieDomains contains an invalid domain';
+  return null;
+}
+
+function checkRules(req, limits) {
+  if (req.mode === 'mirror' && req.includeCookies) {
+    return 'includeCookies only applies to isolated mode (mirror already shows your real tab)';
+  }
+  if (req.includeCookies && req.cookieDomains.length === 0) return 'select at least one cookie domain';
+  if (!isInt(req.ttlMinutes, 1, limits.maxTtlMinutes)) {
+    return `ttlMinutes must be an integer between 1 and ${limits.maxTtlMinutes}`;
+  }
+  if (!isInt(req.maxViewers, 1, limits.maxViewers)) {
+    return `maxViewers must be an integer between 1 and ${limits.maxViewers}`;
+  }
+  return null;
+}
+
+/** Validates an untrusted share request from the admin API and applies defaults. */
+export function validateShareRequest(body, limits) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return fail('body must be a JSON object');
+  const req = {
+    tabId: body.tabId,
+    mode: body.mode ?? 'isolated',
+    includeCookies: body.includeCookies ?? false,
+    cookieDomains: body.cookieDomains ?? [],
+    allowControl: body.allowControl ?? false,
+    oneTime: body.oneTime ?? false,
+    ttlMinutes: body.ttlMinutes ?? limits.defaultTtlMinutes,
+    maxViewers: body.maxViewers ?? 1,
+  };
+  const error = checkTypes(req) ?? checkRules(req, limits);
+  if (error) return fail(error);
+  const cookieDomains = req.includeCookies ? [...new Set(req.cookieDomains.map(normalizeDomain))] : [];
+  return { ok: true, value: Object.freeze({ ...req, cookieDomains: Object.freeze(cookieDomains) }) };
+}
+
+/** Builds an immutable share record from a validated request. */
+export function buildShare(request, tab, now) {
+  return Object.freeze({
+    ...request,
+    id: newId(),
+    token: newToken(),
+    tabUrl: tab.url,
+    tabTitle: tab.title,
+    createdAt: now,
+    expiresAt: now + request.ttlMinutes * 60_000,
+  });
+}
+
+export function createShareStore() {
+  const shares = new Map();
+  return Object.freeze({
+    add(share) {
+      shares.set(share.id, share);
+      return share;
+    },
+    get: (id) => shares.get(id) ?? null,
+    list: () => [...shares.values()],
+    remove(id) {
+      const share = shares.get(id) ?? null;
+      shares.delete(id);
+      return share;
+    },
+    findByToken(token) {
+      return [...shares.values()].find((s) => tokensEqual(s.token, token)) ?? null;
+    },
+    expiredIds: (now) => [...shares.values()].filter((s) => s.expiresAt <= now).map((s) => s.id),
+  });
+}

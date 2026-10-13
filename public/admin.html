@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>tabshare</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/admin.js"></script>
+</head>
+<body>
+<main>
+  <h1>tabshare</h1>
+  <p class="sub" id="status">Connecting…</p>
+
+  <section class="panel">
+    <div class="row spread"><h2>1. Pick a tab</h2><button id="refresh">Refresh</button></div>
+    <ul class="tabs" id="tabs"></ul>
+  </section>
+
+  <section class="panel">
+    <h2>2. Share options</h2>
+    <div class="options">
+      <div class="row">
+        <label>Mode
+          <select id="mode">
+            <option value="isolated">Isolated copy (recommended)</option>
+            <option value="mirror">Mirror my real tab</option>
+          </select>
+        </label>
+      </div>
+      <p class="muted" id="mode-help"></p>
+
+      <div id="cookie-section">
+        <label><input type="checkbox" id="include-cookies"> Include my cookies (stay logged in)</label>
+        <div id="cookie-picker" class="hidden">
+          <p class="muted">Only cookies for the domains you tick are copied into the isolated browser on <em>this</em> machine. The viewer receives video frames only — never cookie values.</p>
+          <div class="domains" id="domains"></div>
+        </div>
+      </div>
+
+      <label><input type="checkbox" id="allow-control"> Let the viewer control the page (mouse &amp; keyboard)</label>
+      <label><input type="checkbox" id="one-time"> One-time link (only the first viewer can join)</label>
+      <div class="row">
+        <label>Expires after <input type="number" id="ttl" min="1" max="1440" value="30"> minutes</label>
+        <label>Max viewers <input type="number" id="max-viewers" min="1" max="10" value="1"></label>
+      </div>
+      <div class="warn hidden" id="risk"></div>
+      <div class="row"><button class="primary" id="create" disabled>Create share link</button><span class="error" id="create-error"></span></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Active shares</h2>
+    <div id="shares"><p class="muted">No active shares.</p></div>
+  </section>
+</main>
+</body>
+</html>

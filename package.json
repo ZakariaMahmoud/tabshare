@@ -1,0 +1,20 @@
+{
+  "name": "tabshare",
+  "version": "0.1.0",
+  "description": "Share a Chrome tab with someone remotely over a Cloudflare Tunnel — they get a live view, never your cookies.",
+  "type": "module",
+  "license": "MIT",
+  "bin": { "tabshare": "src/index.js" },
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/index.js",
+    "chrome": "bash scripts/launch-chrome.sh",
+    "test": "node --test",
+    "coverage": "node --test --experimental-test-coverage --test-coverage-include='src/**'"
+  },
+  "keywords": ["chrome", "screen-share", "cloudflare-tunnel", "cdp", "playwright", "remote-browser"],
+  "dependencies": {
+    "playwright-core": "^1.64.0",
+    "ws": "^8.18.0"
+  }
+}
