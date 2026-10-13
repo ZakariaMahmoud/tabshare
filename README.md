@@ -12,6 +12,7 @@ You choose **how much** to share for each link:
 | **Allow control** | The viewer can click, scroll and type. Off by default, so links are view-only. |
 | **One-time link** | Only the first person to open the link gets in. |
 | **Expiry / max viewers** | Links stop working after N minutes. You can also revoke a link at any time. |
+| **Quality** | **Standard** by default. **High** renders isolated pages at 2× density for crisp text, at a lower frame rate and with more bandwidth. **Low** is for slow connections. Viewers can switch between **Fit** and **Actual size**. |
 
 <p align="center">
   <img src="docs/images/admin.png" alt="tabshare admin page: pick a tab, choose cookies and control, create a share link" width="49%">
@@ -82,7 +83,7 @@ All settings are environment variables:
 | `TABSHARE_TUNNEL_PROTOCOL` | `http2` | `cloudflared` transport. `http2` works on networks that block QUIC/UDP. |
 | `CLOUDFLARED_BIN` | `cloudflared` | Path to `cloudflared` |
 | `TABSHARE_CHROME_CHANNEL` | `chrome` | Browser used for isolated shares (`chrome`, `chromium`, `msedge`) |
-| `TABSHARE_JPEG_QUALITY` | `70` | Stream quality (1–100) |
+| `TABSHARE_JPEG_QUALITY` | `80` | JPEG quality of the **Standard** preset (1–100). Low and High use fixed values. |
 | `TABSHARE_NO_SANDBOX` | — | `1` disables Chrome's sandbox for isolated shares. Use this only if Chrome's sandbox can't start on your system (some containers). |
 | `TABSHARE_PROFILE_DIR` | `~/.tabshare/chrome-profile` | Profile used by `npm run chrome` |
 | `TABSHARE_CDP_PORT` | `9222` | DevTools port used by `npm run chrome` |
@@ -109,8 +110,10 @@ You can also put [Cloudflare Access](https://developers.cloudflare.com/cloudflar
 - **Keyboard control is limited to safe keys.** Viewers can type, use arrows/Tab/Enter, and use
   Ctrl/Cmd + A, C, X, Y, Z. Ctrl/Cmd + V is blocked, because it would paste *your* clipboard. Viewers
   can paste their own text with their usual paste shortcut.
-- **Video is JPEG frames.** It's tuned for reading and clicking, not for watching videos. Raise
-  `TABSHARE_JPEG_QUALITY` for sharper text at the cost of bandwidth.
+- **Video is JPEG frames.** It's tuned for reading and clicking, not for watching videos. For the
+  sharpest text, create the link with **High** quality and have the viewer click **Actual size**.
+  In mirror mode, High only raises the JPEG quality, because your real tab keeps your own screen's
+  pixel density.
 
 ## Troubleshooting
 
@@ -127,6 +130,7 @@ You can also put [Cloudflare Access](https://developers.cloudflare.com/cloudflar
 
 - tabshare attaches to your Chrome over the DevTools protocol (Playwright `connectOverCDP`).
 - Each share streams a page using `Page.startScreencast`. Frames are fanned out over a WebSocket and the stream runs only while someone is watching.
+- The screencast always captures at 1× density, so **High** quality isolated shares use full-resolution screenshots instead. They run about 5 per second and are only sent when the picture changes.
 - **Isolated** shares run in a fresh headless browser context on your machine. Cookies are seeded from your profile, filtered to the domains you selected.
 - The share token lives in the URL **fragment** (`#t=…`). Browsers never send fragments in HTTP requests, so the token doesn't show up in Cloudflare or proxy logs. The viewer page sends it as the first WebSocket message and then removes it from the address bar.
 - Viewer input is validated against a strict schema (`src/input.js`) and replayed in order with Playwright's mouse and keyboard APIs.

@@ -44,6 +44,8 @@ body.viewer { display: flex; flex-direction: column; height: 100vh; }
 .bar { display: flex; gap: 12px; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--border); background: var(--panel); flex-wrap: wrap; }
 .bar .title { font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stage { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 8px; }
+.stage.actual { overflow: auto; align-items: flex-start; justify-content: flex-start; }
+.stage.actual #screen { max-width: none; max-height: none; }
 #screen { max-width: 100%; max-height: 100%; outline: none; background: #000; user-select: none; -webkit-user-drag: none; }
 #screen.control { cursor: crosshair; }
 #screen:focus { box-shadow: 0 0 0 2px var(--accent); }

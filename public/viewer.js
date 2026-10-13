@@ -13,6 +13,21 @@ const COMBO_KEYS = new Set(['a', 'c', 'x', 'y', 'z', 'ArrowUp', 'ArrowDown', 'Ar
 
 let ws;
 let currentUrl = null;
+let frameScale = 1; // frame pixels per CSS pixel of the shared page
+let actualSize = false;
+
+// "Fit" scales the frame to the window; "Actual size" shows it 1:1 (sharper text, scrollable).
+function applyZoom() {
+  const stage = document.querySelector('.stage');
+  stage.classList.toggle('actual', actualSize);
+  screen.style.width = actualSize && screen.naturalWidth ? `${screen.naturalWidth / frameScale}px` : '';
+  $('zoom').textContent = actualSize ? 'Fit to window' : 'Actual size';
+}
+
+$('zoom').addEventListener('click', () => {
+  actualSize = !actualSize;
+  applyZoom();
+});
 let lastMove = 0;
 
 function showMessage(text) {
@@ -80,6 +95,7 @@ function onFrame(data) {
   screen.onload = () => {
     if (currentUrl && currentUrl !== url) URL.revokeObjectURL(currentUrl);
     currentUrl = url;
+    if (actualSize) applyZoom(); // the frame size can change (e.g. the sharer resized the window)
   };
   screen.src = url;
   screen.classList.remove('hidden');
@@ -91,6 +107,9 @@ function onControl(msg) {
     $('title').textContent = msg.title || 'Shared tab';
     $('mode').textContent = msg.allowControl ? 'You can control this tab — click it first' : 'View only';
     $('expires').textContent = `until ${new Date(msg.expiresAt).toLocaleTimeString()}`;
+    $('quality').textContent = `${msg.quality ?? 'standard'} quality`;
+    frameScale = Number(msg.frameScale) > 0 ? Number(msg.frameScale) : 1;
+    $('zoom').classList.remove('hidden');
     showMessage('Waiting for the first frame…');
     if (msg.allowControl) enableControl();
   } else if (msg.type === 'ended') {

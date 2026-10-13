@@ -39,11 +39,11 @@ test('loadConfig reads env with safe fallbacks', () => {
   assert.equal(c.viewerPort, 7071);
   assert.equal(c.publicUrl, 'https://x.dev');
   assert.equal(c.tunnelEnabled, false);
-  assert.equal(c.jpegQuality, 70);
+  assert.equal(c.jpegQuality, 80);
 });
 
 test('loadConfig clamps JPEG quality to the range Chrome accepts', () => {
   assert.equal(loadConfig({ TABSHARE_JPEG_QUALITY: '500' }).jpegQuality, 100);
   assert.equal(loadConfig({ TABSHARE_JPEG_QUALITY: '85' }).jpegQuality, 85);
-  assert.equal(loadConfig({ TABSHARE_JPEG_QUALITY: '-5' }).jpegQuality, 70);
+  assert.equal(loadConfig({ TABSHARE_JPEG_QUALITY: '-5' }).jpegQuality, 80);
 });

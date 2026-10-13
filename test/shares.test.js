@@ -9,7 +9,7 @@ test('applies safe defaults', () => {
   const r = validateShareRequest({ tabId }, limits);
   assert.equal(r.ok, true);
   assert.deepEqual({ ...r.value, cookieDomains: [...r.value.cookieDomains] }, {
-    tabId, mode: 'isolated', includeCookies: false, cookieDomains: [], allowControl: false,
+    tabId, mode: 'isolated', quality: 'standard', includeCookies: false, cookieDomains: [], allowControl: false,
     oneTime: false, ttlMinutes: 30, maxViewers: 1,
   });
   assert.ok(Object.isFrozen(r.value));
@@ -34,6 +34,7 @@ const invalid = [
   [[], /JSON object/],
   [{ tabId: 'nope' }, /tabId/],
   [{ tabId, mode: 'spy' }, /mode/],
+  [{ tabId, quality: 'ultra' }, /quality/],
   [{ tabId, allowControl: 'yes' }, /allowControl/],
   [{ tabId, cookieDomains: 'github.com' }, /cookieDomains/],
   [{ tabId, includeCookies: true, cookieDomains: ['bad domain!'] }, /invalid domain/],

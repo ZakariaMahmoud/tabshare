@@ -19,8 +19,8 @@ export function loadConfig(env = process.env) {
     chromeChannel: env.TABSHARE_CHROME_CHANNEL ?? 'chrome',
     // Only disable if Chrome's sandbox cannot start on your system (e.g. some containers).
     chromeSandbox: env.TABSHARE_NO_SANDBOX !== '1',
-    // Chrome's screencast accepts 0–100.
-    jpegQuality: clamp(positiveInt(env.TABSHARE_JPEG_QUALITY, 70), 1, 100),
+    // JPEG quality for the "standard" preset. Chrome's screencast accepts 0–100.
+    jpegQuality: clamp(positiveInt(env.TABSHARE_JPEG_QUALITY, 80), 1, 100),
     viewport: Object.freeze({ width: 1280, height: 800 }),
     limits: Object.freeze({
       defaultTtlMinutes: 30,

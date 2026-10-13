@@ -131,6 +131,7 @@ async function createShare() {
       body: JSON.stringify({
         tabId: state.selectedTab,
         mode,
+        quality: $('quality').value,
         includeCookies,
         cookieDomains: includeCookies ? selectedDomains() : [],
         allowControl: $('allow-control').checked,
@@ -153,6 +154,7 @@ const shareCards = new Map(); // share id -> { node, badgeRow, badgeKey }
 
 const badgeTexts = (share) => [
   share.mode,
+  `${share.quality} quality`,
   share.includeCookies ? `cookies: ${share.cookieDomains.join(', ')}` : 'no cookies',
   share.allowControl ? 'control' : 'view only',
   share.oneTime ? 'one-time' : `max ${share.maxViewers}`,

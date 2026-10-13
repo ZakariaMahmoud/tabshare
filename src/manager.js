@@ -29,6 +29,7 @@ export function createShareManager({
       tabUrl: share.tabUrl,
       tabTitle: share.tabTitle,
       mode: share.mode,
+      quality: share.quality,
       includeCookies: share.includeCookies,
       cookieDomains: share.cookieDomains,
       allowControl: share.allowControl,

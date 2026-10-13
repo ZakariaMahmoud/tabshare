@@ -7,6 +7,7 @@ import { createShareStore } from '../src/shares.js';
 
 const log = { info() {}, warn() {}, error() {}, debug() {} };
 const limits = { defaultTtlMinutes: 30, maxTtlMinutes: 1440, maxViewers: 10 };
+const STREAM = Object.freeze({ jpegQuality: 80, deviceScaleFactor: 1 });
 
 function fakeWs() {
   const ws = new EventEmitter();
@@ -41,7 +42,7 @@ const share = (over = {}) => ({ id: 'aaaaaaaaaaaa', tabTitle: 'T', allowControl:
 test('hub streams only while viewers are connected and broadcasts frames', async () => {
   const s = fakeStreaming();
   let closed = false;
-  const hub = createHub({ share: share(), session: { page: {}, close: async () => { closed = true; } }, ...s, quality: 50, log });
+  const hub = createHub({ share: share(), session: { page: {}, close: async () => { closed = true; } }, ...s, stream: STREAM, log });
   const ws = fakeWs();
   assert.equal(await hub.addViewer(ws), 'ok');
   assert.equal(JSON.parse(ws.sent[0]).type, 'hello');
@@ -65,11 +66,11 @@ test('hub streams only while viewers are connected and broadcasts frames', async
 test('hub enforces max viewers and one-time links', async () => {
   const s = fakeStreaming();
   const session = { page: {}, close: async () => {} };
-  const full = createHub({ share: share({ maxViewers: 1 }), session, ...s, quality: 50, log });
+  const full = createHub({ share: share({ maxViewers: 1 }), session, ...s, stream: STREAM, log });
   assert.equal(await full.addViewer(fakeWs()), 'ok');
   assert.equal(await full.addViewer(fakeWs()), 'full');
 
-  const once = createHub({ share: share({ oneTime: true }), session, ...s, quality: 50, log });
+  const once = createHub({ share: share({ oneTime: true }), session, ...s, stream: STREAM, log });
   const first = fakeWs();
   assert.equal(await once.addViewer(first), 'ok');
   first.close();
@@ -79,14 +80,14 @@ test('hub enforces max viewers and one-time links', async () => {
 test('hub ignores input unless control is allowed, and validates it', async () => {
   const session = { page: {}, close: async () => {} };
   const viewOnly = fakeStreaming();
-  const hubA = createHub({ share: share(), session, ...viewOnly, quality: 50, log });
+  const hubA = createHub({ share: share(), session, ...viewOnly, stream: STREAM, log });
   const a = fakeWs();
   await hubA.addViewer(a);
   a.emit('message', Buffer.from(JSON.stringify({ type: 'text', text: 'hi' })), false);
   assert.equal(viewOnly.calls.inputs.length, 0);
 
   const control = fakeStreaming();
-  const hubB = createHub({ share: share({ allowControl: true }), session, ...control, quality: 50, log });
+  const hubB = createHub({ share: share({ allowControl: true }), session, ...control, stream: STREAM, log });
   const b = fakeWs();
   await hubB.addViewer(b);
   b.emit('message', Buffer.from(JSON.stringify({ type: 'text', text: 'hi' })), false);
@@ -99,7 +100,7 @@ test('hub ignores input unless control is allowed, and validates it', async () =
 
 test('hub close notifies viewers', async () => {
   const s = fakeStreaming();
-  const hub = createHub({ share: share(), session: { page: {}, close: async () => {} }, ...s, quality: 50, log });
+  const hub = createHub({ share: share(), session: { page: {}, close: async () => {} }, ...s, stream: STREAM, log });
   const ws = fakeWs();
   await hub.addViewer(ws);
   await hub.close('revoked');
@@ -218,10 +219,24 @@ test('hub replays input in order even when some calls are slow', async () => {
     if (input.action === 'down') await new Promise((r) => setTimeout(r, 20));
     order.push(input.action);
   };
-  const hub = createHub({ share: share({ allowControl: true }), session: { page: {}, close: async () => {} }, ...s, applyInput, quality: 50, log });
+  const hub = createHub({ share: share({ allowControl: true }), session: { page: {}, close: async () => {} }, ...s, applyInput, stream: STREAM, log });
   const ws = fakeWs();
   await hub.addViewer(ws);
   for (const action of ['down', 'up']) ws.emit('message', Buffer.from(JSON.stringify({ type: 'mouse', action, x: 0, y: 0 })), false);
   await new Promise((r) => setTimeout(r, 50));
   assert.deepEqual(order, ['down', 'up']);
+});
+
+test('hub forwards stream settings and tells viewers the quality and frame density', async () => {
+  let opts;
+  const s = fakeStreaming();
+  const startStreamer = async (page, o) => ((opts = o), s.startStreamer(page, o));
+  const stream = { jpegQuality: 92, deviceScaleFactor: 2 };
+  const hub = createHub({ share: share({ quality: 'high' }), session: { page: {}, close: async () => {} }, ...s, startStreamer, stream, log });
+  const ws = fakeWs();
+  await hub.addViewer(ws);
+  assert.equal(opts.jpegQuality, 92);
+  const hello = JSON.parse(ws.sent[0]);
+  assert.equal(hello.quality, 'high');
+  assert.equal(hello.frameScale, 2);
 });

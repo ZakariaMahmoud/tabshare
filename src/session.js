@@ -31,13 +31,13 @@ async function guardPrivateNetwork(context, sharedUrl) {
  *              cookies of the selected domains. Cookies never leave your machine —
  *              viewers only ever receive rendered frames.
  */
-export async function openSession({ share, tabPage, isolatedBrowsers, viewport }) {
+export async function openSession({ share, tabPage, isolatedBrowsers, viewport, deviceScaleFactor = 1 }) {
   if (share.mode === 'mirror') {
     return Object.freeze({ page: tabPage, close: async () => {} });
   }
 
   const browser = await isolatedBrowsers.get();
-  const context = await browser.newContext({ viewport, acceptDownloads: false });
+  const context = await browser.newContext({ viewport, deviceScaleFactor, acceptDownloads: false });
   try {
     await guardPrivateNetwork(context, share.tabUrl);
     if (share.includeCookies) {

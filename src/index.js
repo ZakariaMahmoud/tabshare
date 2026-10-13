@@ -4,6 +4,7 @@ import { connectUserChrome, createIsolatedBrowserProvider, createTabRegistry, sa
 import { loadConfig } from './config.js';
 import { createHub } from './hub.js';
 import { createShareManager } from './manager.js';
+import { streamSettings } from './quality.js';
 import { openSession } from './session.js';
 import { createShareStore } from './shares.js';
 import { applyInput, startStreamer } from './streamer.js';
@@ -62,9 +63,23 @@ async function main() {
     getPublicUrl: () => publicUrl,
     getTitle: safeTitle,
     isForbiddenUrl,
-    openSession: ({ share, tabPage }) => openSession({ share, tabPage, isolatedBrowsers, viewport: config.viewport }),
+    openSession: ({ share, tabPage }) =>
+      openSession({
+        share,
+        tabPage,
+        isolatedBrowsers,
+        viewport: config.viewport,
+        deviceScaleFactor: streamSettings(share.quality, share.mode, config.jpegQuality).deviceScaleFactor,
+      }),
     makeHub: ({ share, session }) =>
-      createHub({ share, session, startStreamer, applyInput, quality: config.jpegQuality, log }),
+      createHub({
+        share,
+        session,
+        startStreamer,
+        applyInput,
+        stream: streamSettings(share.quality, share.mode, config.jpegQuality),
+        log,
+      }),
     log,
   });
 

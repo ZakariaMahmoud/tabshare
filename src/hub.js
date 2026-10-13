@@ -27,7 +27,7 @@ function createInputLimiter(now) {
  * Fans one share's frames out to its viewers. Streaming runs only while someone is watching.
  * Dependencies are injected so this can be tested without a browser.
  */
-export function createHub({ share, session, startStreamer, applyInput, quality, log, now = Date.now }) {
+export function createHub({ share, session, startStreamer, applyInput, stream, log, now = Date.now }) {
   const viewers = new Set();
   let streamer = null;
   let starting = null;
@@ -43,7 +43,7 @@ export function createHub({ share, session, startStreamer, applyInput, quality, 
 
   async function ensureStreaming() {
     if (streamer) return;
-    starting ??= startStreamer(session.page, { quality, onFrame: broadcast, log })
+    starting ??= startStreamer(session.page, { ...stream, onFrame: broadcast, log })
       .then((s) => {
         streamer = s;
       })
@@ -74,7 +74,7 @@ export function createHub({ share, session, startStreamer, applyInput, quality, 
     // so fall back to the page viewport for coordinates.
     ws.inputChain = ws.inputChain
       .then(() => {
-        const size = streamer?.getSize() ?? session.page.viewportSize?.() ?? { width: 0, height: 0 };
+        const size = streamer?.getSize() ?? null; // null: applyInput measures the page itself
         return applyInput(session.page, size, input);
       })
       .catch((err) => log.warn(`[hub ${share.id}] input failed: ${err.message}`))
@@ -98,7 +98,15 @@ export function createHub({ share, session, startStreamer, applyInput, quality, 
         stopIfIdle();
       });
       ws.on('message', (data, isBinary) => handleInput(ws, data, isBinary));
-      sendJson(ws, { type: 'hello', title: share.tabTitle, allowControl: share.allowControl, expiresAt: share.expiresAt });
+      sendJson(ws, {
+        type: 'hello',
+        title: share.tabTitle,
+        allowControl: share.allowControl,
+        expiresAt: share.expiresAt,
+        quality: share.quality,
+        // Frame pixels per CSS pixel, so the viewer can show the page at its actual size.
+        frameScale: stream.deviceScaleFactor,
+      });
       if (lastFrame) ws.send(lastFrame);
       await ensureStreaming();
       stopIfIdle();

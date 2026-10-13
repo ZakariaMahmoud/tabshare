@@ -1,4 +1,5 @@
 import { normalizeDomain } from './cookies.js';
+import { QUALITY_NAMES } from './quality.js';
 import { newId, newToken, tokensEqual } from './tokens.js';
 
 const MODES = new Set(['mirror', 'isolated']);
@@ -17,6 +18,7 @@ const isValidDomain = (d) =>
 function checkTypes(req) {
   if (!TAB_ID_RE.test(String(req.tabId))) return 'tabId is invalid';
   if (!MODES.has(req.mode)) return 'mode must be "mirror" or "isolated"';
+  if (!QUALITY_NAMES.includes(req.quality)) return `quality must be one of ${QUALITY_NAMES.join(', ')}`;
   for (const key of ['includeCookies', 'allowControl', 'oneTime']) {
     if (typeof req[key] !== 'boolean') return `${key} must be a boolean`;
   }
@@ -47,6 +49,7 @@ export function validateShareRequest(body, limits) {
   const req = {
     tabId: body.tabId,
     mode: body.mode ?? 'isolated',
+    quality: body.quality ?? 'standard',
     includeCookies: body.includeCookies ?? false,
     cookieDomains: body.cookieDomains ?? [],
     allowControl: body.allowControl ?? false,
