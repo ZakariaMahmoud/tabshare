@@ -24,7 +24,7 @@ function requireAdmin(req, adminKey) {
 }
 
 export function createAdminServer({ port, adminKey, manager, tabs, getUserBrowser, getPublicUrl, maxExpiryMinutes, isForbiddenUrl = () => false, log }) {
-  const serveStatic = loadStatic(['admin.html', 'admin.js', 'style.css']);
+  const serveStatic = loadStatic(['admin.html', 'admin.js', 'admin.css']);
 
   const userBrowser = () => {
     const browser = getUserBrowser();

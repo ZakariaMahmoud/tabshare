@@ -3,71 +3,132 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
   <title>tabshare</title>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/admin.css">
   <script type="module" src="/admin.js"></script>
 </head>
 <body>
-<main>
-  <h1>tabshare</h1>
-  <p class="sub" id="status">Connecting…</p>
+  <header class="topbar">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="2.5" y="5" width="19" height="14" rx="3"></rect>
+        <path d="M2.5 9.2h19"></path>
+        <circle cx="5.6" cy="7.1" r=".9"></circle>
+        <circle cx="8.3" cy="7.1" r=".9"></circle>
+      </svg>
+      <span>tabshare</span>
+    </div>
+    <div class="status" aria-live="polite">
+      <span class="chip" id="chrome-chip"><span class="dot"></span><span id="chrome-text">Connecting…</span></span>
+      <span class="chip url-chip" id="url-chip">
+        <span class="dot"></span>
+        <span id="url-text">Starting tunnel…</span>
+        <button class="icon-btn hidden" id="copy-url" type="button" title="Copy public URL" aria-label="Copy public URL">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path></svg>
+        </button>
+      </span>
+    </div>
+  </header>
 
-  <section class="panel">
-    <div class="row spread"><h2>1. Pick a tab</h2><button id="refresh">Refresh</button></div>
-    <ul class="tabs" id="tabs"></ul>
-  </section>
+  <main class="layout">
+    <section class="card">
+      <h1>New share</h1>
 
-  <section class="panel">
-    <h2>2. Share options</h2>
-    <div class="options">
-      <div class="row">
-        <label>Mode
-          <select id="mode">
-            <option value="isolated">Isolated copy (recommended)</option>
-            <option value="mirror">Mirror my real tab</option>
-          </select>
-        </label>
-        <label>Quality
-          <select id="quality">
-            <option value="standard" selected>Standard</option>
-            <option value="high">High — sharpest text, more bandwidth</option>
-            <option value="low">Low — for slow connections</option>
-          </select>
-        </label>
+      <div class="section">
+        <div class="section-head">
+          <h2><span class="step">1</span>Choose a tab</h2>
+          <button class="ghost" id="refresh" type="button">Refresh</button>
+        </div>
+        <input class="search hidden" id="tab-search" type="search" placeholder="Search tabs…" aria-label="Search tabs">
+        <div class="tab-list" id="tabs" role="radiogroup" aria-label="Open tabs"></div>
       </div>
-      <p class="muted" id="mode-help"></p>
 
-      <div id="cookie-section">
-        <label><input type="checkbox" id="include-cookies"> Include my cookies (stay logged in)</label>
-        <div id="cookie-picker" class="hidden">
-          <p class="muted">Only cookies for the domains you tick are copied into the isolated browser on <em>this</em> machine. The viewer receives video frames only — never cookie values.</p>
-          <div class="domains" id="domains"></div>
+      <div class="section">
+        <h2><span class="step">2</span>Share options</h2>
+        <div class="field-grid">
+          <div class="field">
+            <label for="mode">Mode</label>
+            <select id="mode">
+              <option value="isolated">Isolated copy (recommended)</option>
+              <option value="mirror">Mirror my real tab</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="quality">Quality</label>
+            <select id="quality">
+              <option value="standard" selected>Standard</option>
+              <option value="high">High — sharpest text</option>
+              <option value="low">Low — slow connections</option>
+            </select>
+          </div>
+        </div>
+        <p class="help" id="mode-help"></p>
+
+        <div class="toggles">
+          <div id="cookie-section">
+            <label class="switch">
+              <input type="checkbox" id="include-cookies">
+              <span class="slider"></span>
+              <span class="switch-text">Include my cookies<small>Load the page logged in as you</small></span>
+            </label>
+            <div id="cookie-picker" class="hidden">
+              <p class="cookie-note">Only cookies for the domains you tick are copied into the isolated browser on <em>this</em> machine. The viewer receives video frames only — never cookie values.</p>
+              <div class="domains" id="domains"></div>
+            </div>
+          </div>
+
+          <label class="switch">
+            <input type="checkbox" id="allow-control">
+            <span class="slider"></span>
+            <span class="switch-text">Let the viewer control the page<small>Mouse &amp; keyboard</small></span>
+          </label>
+
+          <label class="switch">
+            <input type="checkbox" id="one-time">
+            <span class="slider"></span>
+            <span class="switch-text">One-time link<small>Only the first viewer can join</small></span>
+          </label>
         </div>
       </div>
 
-      <label><input type="checkbox" id="allow-control"> Let the viewer control the page (mouse &amp; keyboard)</label>
-      <label><input type="checkbox" id="one-time"> One-time link (only the first viewer can join)</label>
-      <div class="row">
-        <span>Expires</span>
-        <label><input type="radio" name="expiry" value="after" checked> after <input type="number" id="ttl" min="1" value="30">
-          <select id="ttl-unit"><option value="1" selected>minutes</option><option value="60">hours</option><option value="1440">days</option></select></label>
-        <label><input type="radio" name="expiry" value="at"> at <input type="datetime-local" id="expires-at"></label>
+      <div class="section">
+        <h2><span class="step">3</span>Limits</h2>
+        <div class="field">
+          <span class="field-label">Link expires</span>
+          <div class="expiry">
+            <label class="expiry-row"><input type="radio" name="expiry" value="after" checked> after
+              <input type="number" id="ttl" min="1" value="30">
+              <select id="ttl-unit"><option value="1" selected>minutes</option><option value="60">hours</option><option value="1440">days</option></select>
+            </label>
+            <label class="expiry-row"><input type="radio" name="expiry" value="at"> at
+              <input type="datetime-local" id="expires-at">
+            </label>
+          </div>
+        </div>
+        <div class="field" style="margin-top:14px">
+          <label for="max-viewers">Max viewers at once</label>
+          <div class="expiry-row">
+            <input type="number" id="max-viewers" min="1" max="10" value="1">
+            <span class="muted" id="viewers-help"></span>
+          </div>
+        </div>
       </div>
-      <div class="row">
-        <label>Max viewers at once <input type="number" id="max-viewers" min="1" max="10" value="1"></label>
-        <span class="muted" id="viewers-help"></span>
-      </div>
-      <div class="warn hidden" id="risk"></div>
-      <div class="row"><button class="primary" id="create" disabled>Create share link</button><span class="error" id="create-error"></span></div>
-    </div>
-  </section>
 
-  <section class="panel">
-    <h2>Active shares</h2>
-    <div id="shares"></div>
-    <p class="muted" id="no-shares">No active shares.</p>
-    <p class="error" id="shares-error"></p>
-  </section>
-</main>
+      <div class="warn hidden" id="risk"></div>
+      <p class="summary" id="summary"></p>
+      <button class="btn-primary" id="create" type="button" disabled>Create share link</button>
+      <span class="error" id="create-error"></span>
+    </section>
+
+    <section class="card shares">
+      <h1>Active shares</h1>
+      <div id="shares"></div>
+      <p class="muted" id="no-shares">No active shares yet. Create one on the left.</p>
+      <p class="error" id="shares-error"></p>
+    </section>
+  </main>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
 </body>
 </html>
