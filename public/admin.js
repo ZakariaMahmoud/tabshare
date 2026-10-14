@@ -120,15 +120,62 @@ function updateOptions() {
 
 const selectedDomains = () => [...$('domains').querySelectorAll('input:checked')].map((i) => i.value);
 
+const pad = (n) => String(n).padStart(2, '0');
+/** Formats a time as the value of an <input type="datetime-local"> (local time, minutes). */
+const toLocalInput = (ms) => {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+/** "4:30 PM" today, otherwise "Oct 15, 9:00 AM". */
+function formatWhen(ms) {
+  const d = new Date(ms);
+  const sameDay = d.toDateString() === new Date().toDateString();
+  return sameDay
+    ? d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    : d.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
+const MAX_EXPIRY_MS = 24 * 60 * 60_000;
+
+/** Keeps the date picker within what the server accepts: 1 minute to 24 hours from now. */
+function refreshExpiryPicker() {
+  const picker = $('expires-at');
+  const now = Date.now();
+  picker.min = toLocalInput(now + 60_000);
+  picker.max = toLocalInput(now + MAX_EXPIRY_MS);
+  if (!picker.value) picker.value = toLocalInput(now + 60 * 60_000);
+}
+
+const selectExpiry = (kind) => {
+  document.querySelector(`input[name="expiry"][value="${kind}"]`).checked = true;
+};
+
+function expiryRequest() {
+  const kind = document.querySelector('input[name="expiry"]:checked').value;
+  if (kind === 'after') return { ttlMinutes: Number($('ttl').value) };
+  const at = new Date($('expires-at').value).getTime();
+  if (!Number.isFinite(at)) throw new Error('Pick a date and time for the link to expire.');
+  return { expiresAt: at };
+}
+
+function updateViewersHelp() {
+  const n = Number($('max-viewers').value);
+  $('viewers-help').textContent =
+    n === 1 ? 'Only one person can watch at a time.' : `Up to ${n} people can watch at the same time.`;
+}
+
 async function createShare() {
   $('create-error').textContent = '';
   $('create').disabled = true;
   const mode = $('mode').value;
   const includeCookies = mode === 'isolated' && $('include-cookies').checked;
   try {
+    const expiry = expiryRequest();
     await api('/api/shares', {
       method: 'POST',
       body: JSON.stringify({
+        ...expiry,
         tabId: state.selectedTab,
         mode,
         quality: $('quality').value,
@@ -136,7 +183,6 @@ async function createShare() {
         cookieDomains: includeCookies ? selectedDomains() : [],
         allowControl: $('allow-control').checked,
         oneTime: $('one-time').checked,
-        ttlMinutes: Number($('ttl').value),
         maxViewers: Number($('max-viewers').value),
       }),
     });
@@ -157,9 +203,8 @@ const badgeTexts = (share) => [
   `${share.quality} quality`,
   share.includeCookies ? `cookies: ${share.cookieDomains.join(', ')}` : 'no cookies',
   share.allowControl ? 'control' : 'view only',
-  share.oneTime ? 'one-time' : `max ${share.maxViewers}`,
-  `${share.viewers} watching`,
-  `expires ${new Date(share.expiresAt).toLocaleTimeString()}`,
+  share.oneTime ? `one-time · ${share.viewers} watching` : `${share.viewers}/${share.maxViewers} watching`,
+  `expires ${formatWhen(share.expiresAt)}`,
 ];
 
 function createShareCard(share) {
@@ -237,6 +282,12 @@ $('include-cookies').addEventListener('change', () => {
   if ($('include-cookies').checked) loadDomains();
 });
 $('create').addEventListener('click', createShare);
+$('expires-at').addEventListener('focus', refreshExpiryPicker);
+$('expires-at').addEventListener('input', () => selectExpiry('at'));
+$('ttl').addEventListener('input', () => selectExpiry('after'));
+$('max-viewers').addEventListener('input', updateViewersHelp);
+refreshExpiryPicker();
+updateViewersHelp();
 
 updateOptions();
 loadStatus();

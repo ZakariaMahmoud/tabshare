@@ -41,7 +41,7 @@ export function createShareManager({
     });
 
   async function create(body) {
-    const result = validateShareRequest(body, limits);
+    const result = validateShareRequest(body, limits, now());
     if (!result.ok) throw new HttpError(400, result.error);
     const tabPage = tabs.get(result.value.tabId);
     if (!tabPage) throw new HttpError(404, 'tab not found — refresh the tab list');

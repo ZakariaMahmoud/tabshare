@@ -29,14 +29,33 @@ function checkTypes(req) {
   return null;
 }
 
+const MIN_LIFETIME_MS = 60_000;
+
+/** Resolves the absolute expiry from either `ttlMinutes` or an explicit `expiresAt` (epoch ms). */
+function resolveExpiry(body, limits, now) {
+  const maxMs = limits.maxTtlMinutes * 60_000;
+  if (body.expiresAt !== undefined && body.ttlMinutes !== undefined) {
+    return { error: 'use either ttlMinutes or expiresAt, not both' };
+  }
+  if (body.expiresAt === undefined) {
+    const ttlMinutes = body.ttlMinutes ?? limits.defaultTtlMinutes;
+    if (!isInt(ttlMinutes, 1, limits.maxTtlMinutes)) {
+      return { error: `ttlMinutes must be an integer between 1 and ${limits.maxTtlMinutes}` };
+    }
+    return { expiresAt: now + ttlMinutes * 60_000 };
+  }
+  const { expiresAt } = body;
+  if (!Number.isInteger(expiresAt)) return { error: 'expiresAt must be a timestamp in milliseconds' };
+  if (expiresAt < now + MIN_LIFETIME_MS) return { error: 'expiry must be at least 1 minute in the future' };
+  if (expiresAt > now + maxMs) return { error: `expiry can be at most ${limits.maxTtlMinutes / 60} hours from now` };
+  return { expiresAt };
+}
+
 function checkRules(req, limits) {
   if (req.mode === 'mirror' && req.includeCookies) {
     return 'includeCookies only applies to isolated mode (mirror already shows your real tab)';
   }
   if (req.includeCookies && req.cookieDomains.length === 0) return 'select at least one cookie domain';
-  if (!isInt(req.ttlMinutes, 1, limits.maxTtlMinutes)) {
-    return `ttlMinutes must be an integer between 1 and ${limits.maxTtlMinutes}`;
-  }
   if (!isInt(req.maxViewers, 1, limits.maxViewers)) {
     return `maxViewers must be an integer between 1 and ${limits.maxViewers}`;
   }
@@ -44,7 +63,7 @@ function checkRules(req, limits) {
 }
 
 /** Validates an untrusted share request from the admin API and applies defaults. */
-export function validateShareRequest(body, limits) {
+export function validateShareRequest(body, limits, now = Date.now()) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return fail('body must be a JSON object');
   const req = {
     tabId: body.tabId,
@@ -54,13 +73,14 @@ export function validateShareRequest(body, limits) {
     cookieDomains: body.cookieDomains ?? [],
     allowControl: body.allowControl ?? false,
     oneTime: body.oneTime ?? false,
-    ttlMinutes: body.ttlMinutes ?? limits.defaultTtlMinutes,
     maxViewers: body.maxViewers ?? 1,
   };
   const error = checkTypes(req) ?? checkRules(req, limits);
   if (error) return fail(error);
+  const expiry = resolveExpiry(body, limits, now);
+  if (expiry.error) return fail(expiry.error);
   const cookieDomains = req.includeCookies ? [...new Set(req.cookieDomains.map(normalizeDomain))] : [];
-  return { ok: true, value: Object.freeze({ ...req, cookieDomains: Object.freeze(cookieDomains) }) };
+  return { ok: true, value: Object.freeze({ ...req, expiresAt: expiry.expiresAt, cookieDomains: Object.freeze(cookieDomains) }) };
 }
 
 /** Builds an immutable share record from a validated request. */
@@ -72,7 +92,6 @@ export function buildShare(request, tab, now) {
     tabUrl: tab.url,
     tabTitle: tab.title,
     createdAt: now,
-    expiresAt: now + request.ttlMinutes * 60_000,
   });
 }
 

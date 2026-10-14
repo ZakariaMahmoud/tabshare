@@ -1,8 +1,21 @@
 const $ = (id) => document.getElementById(id);
 const screen = $('screen');
-const token = new URLSearchParams(location.hash.slice(1)).get('t');
-// Remove the secret from the address bar so it isn't shared by accident (screenshots, copy-paste).
-history.replaceState(null, '', location.pathname);
+const TOKEN_KEY = 'tabshare-token';
+
+// The token arrives in the URL fragment. It's removed from the address bar so it isn't shared by
+// accident (screenshots, copy-paste), and kept in sessionStorage — which is per browser tab and
+// survives a reload — so refreshing the page doesn't lock the viewer out.
+function readToken() {
+  const fromHash = new URLSearchParams(location.hash.slice(1)).get('t');
+  history.replaceState(null, '', location.pathname);
+  try {
+    if (fromHash) sessionStorage.setItem(TOKEN_KEY, fromHash);
+    return fromHash ?? sessionStorage.getItem(TOKEN_KEY);
+  } catch {
+    return fromHash;
+  }
+}
+const token = readToken();
 
 const BUTTONS = ['left', 'middle', 'right'];
 const NAMED_KEYS = new Set(['Enter', 'Backspace', 'Tab', 'Escape', 'Delete', 'Home', 'End', 'PageUp', 'PageDown',
@@ -106,7 +119,11 @@ function onControl(msg) {
   if (msg.type === 'hello') {
     $('title').textContent = msg.title || 'Shared tab';
     $('mode').textContent = msg.allowControl ? 'You can control this tab — click it first' : 'View only';
-    $('expires').textContent = `until ${new Date(msg.expiresAt).toLocaleTimeString()}`;
+    const until = new Date(msg.expiresAt);
+    const sameDay = until.toDateString() === new Date().toDateString();
+    $('expires').textContent = `until ${sameDay
+      ? until.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+      : until.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
     $('quality').textContent = `${msg.quality ?? 'standard'} quality`;
     frameScale = Number(msg.frameScale) > 0 ? Number(msg.frameScale) : 1;
     $('zoom').classList.remove('hidden');

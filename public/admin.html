@@ -48,8 +48,13 @@
       <label><input type="checkbox" id="allow-control"> Let the viewer control the page (mouse &amp; keyboard)</label>
       <label><input type="checkbox" id="one-time"> One-time link (only the first viewer can join)</label>
       <div class="row">
-        <label>Expires after <input type="number" id="ttl" min="1" max="1440" value="30"> minutes</label>
-        <label>Max viewers <input type="number" id="max-viewers" min="1" max="10" value="1"></label>
+        <span>Expires</span>
+        <label><input type="radio" name="expiry" value="after" checked> after <input type="number" id="ttl" min="1" max="1440" value="30"> minutes</label>
+        <label><input type="radio" name="expiry" value="at"> at <input type="datetime-local" id="expires-at"></label>
+      </div>
+      <div class="row">
+        <label>Max viewers at once <input type="number" id="max-viewers" min="1" max="10" value="1"></label>
+        <span class="muted" id="viewers-help"></span>
       </div>
       <div class="warn hidden" id="risk"></div>
       <div class="row"><button class="primary" id="create" disabled>Create share link</button><span class="error" id="create-error"></span></div>

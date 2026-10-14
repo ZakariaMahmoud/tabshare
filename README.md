@@ -124,8 +124,8 @@ With control enabled, they click into the page first, then use the mouse and key
 | **Quality** | Standard | **Low** for slow connections. **High** renders isolated pages at 2× for crisp text, at a lower frame rate and with more bandwidth. |
 | **Let the viewer control the page** | off | Mouse and keyboard input from the viewer. |
 | **One-time link** | off | Only the first person to open the link gets in. |
-| **Expires after** | 30 min | Up to 24 hours. Revoke any time before that. |
-| **Max viewers** | 1 | Up to 10 people watching at once. |
+| **Expires** | after 30 min | After N minutes, **or at a date and time** you pick, up to 24 hours ahead. Revoke any time before that. |
+| **Max viewers at once** | 1 | How many people can watch at the same time (up to 10). With 1, a second person is turned away while someone is watching. |
 
 ## How it works
 
@@ -243,6 +243,12 @@ They never receive cookies or tokens, only images. With control enabled they can
 <summary><b>Why a separate Chrome window instead of my normal one?</b></summary>
 
 Chrome 136+ blocks remote debugging on your default profile. A dedicated profile also means tabshare can only ever see the tabs you deliberately open there.
+</details>
+
+<details>
+<summary><b>Why can't a second person open my link?</b></summary>
+
+New links allow **one viewer at a time** by default. Raise **Max viewers at once** before creating the link. The share card shows how many people are watching, for example *1/2 watching*. Viewers can reload the page without losing their place.
 </details>
 
 <details>

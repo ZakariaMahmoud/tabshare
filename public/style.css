@@ -21,7 +21,7 @@ button { font: inherit; border: 1px solid var(--border); background: var(--panel
 button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
 button.danger { color: var(--danger); }
 button:disabled { opacity: .5; cursor: default; }
-input[type=number], select { font: inherit; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); color: var(--text); }
+input[type=number], input[type=datetime-local], select { font: inherit; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); color: var(--text); }
 input[type=number] { width: 80px; }
 input[type=text] { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); width: 100%; min-width: 0; flex: 1; }
 label { display: inline-flex; gap: 6px; align-items: center; }

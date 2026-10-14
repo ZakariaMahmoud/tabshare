@@ -18,7 +18,7 @@ const clientKey = (req) =>
 
 const REJECTIONS = {
   invalid: 'This link is invalid, expired or revoked.',
-  full: 'This share already has the maximum number of viewers.',
+  full: 'Someone is already watching, and this link allows only a limited number of viewers at once. Ask the person who shared it to raise “Max viewers”, or try again later.',
   link_used: 'This one-time link has already been used.',
 };
 
