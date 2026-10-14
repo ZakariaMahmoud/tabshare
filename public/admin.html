@@ -49,7 +49,8 @@
       <label><input type="checkbox" id="one-time"> One-time link (only the first viewer can join)</label>
       <div class="row">
         <span>Expires</span>
-        <label><input type="radio" name="expiry" value="after" checked> after <input type="number" id="ttl" min="1" max="1440" value="30"> minutes</label>
+        <label><input type="radio" name="expiry" value="after" checked> after <input type="number" id="ttl" min="1" value="30">
+          <select id="ttl-unit"><option value="1" selected>minutes</option><option value="60">hours</option><option value="1440">days</option></select></label>
         <label><input type="radio" name="expiry" value="at"> at <input type="datetime-local" id="expires-at"></label>
       </div>
       <div class="row">

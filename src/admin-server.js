@@ -23,7 +23,7 @@ function requireAdmin(req, adminKey) {
   }
 }
 
-export function createAdminServer({ port, adminKey, manager, tabs, getUserBrowser, getPublicUrl, isForbiddenUrl = () => false, log }) {
+export function createAdminServer({ port, adminKey, manager, tabs, getUserBrowser, getPublicUrl, maxExpiryMinutes, isForbiddenUrl = () => false, log }) {
   const serveStatic = loadStatic(['admin.html', 'admin.js', 'style.css']);
 
   const userBrowser = () => {
@@ -43,7 +43,10 @@ export function createAdminServer({ port, adminKey, manager, tabs, getUserBrowse
     const { method } = req;
     requireAdmin(req, adminKey);
     if (method === 'GET' && path === '/api/status') {
-      return sendJson(res, 200, { ok: true, data: { publicUrl: getPublicUrl(), chromeConnected: Boolean(getUserBrowser()?.isConnected()) } });
+      return sendJson(res, 200, {
+        ok: true,
+        data: { publicUrl: getPublicUrl(), chromeConnected: Boolean(getUserBrowser()?.isConnected()), maxExpiryMinutes },
+      });
     }
     if (method === 'GET' && path === '/api/tabs') {
       const list = await tabs.list(userBrowser());

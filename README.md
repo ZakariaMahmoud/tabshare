@@ -124,7 +124,7 @@ With control enabled, they click into the page first, then use the mouse and key
 | **Quality** | Standard | **Low** for slow connections. **High** renders isolated pages at 2× for crisp text, at a lower frame rate and with more bandwidth. |
 | **Let the viewer control the page** | off | Mouse and keyboard input from the viewer. |
 | **One-time link** | off | Only the first person to open the link gets in. |
-| **Expires** | after 30 min | After N minutes, **or at a date and time** you pick, up to 24 hours ahead. Revoke any time before that. |
+| **Expires** | after 30 min | After N minutes, hours or days, **or at a date and time** you pick, up to **7 days** ahead. Revoke any time before that. |
 | **Max viewers at once** | 1 | How many people can watch at the same time (up to 10). With 1, a second person is turned away while someone is watching. |
 
 ## How it works
@@ -209,6 +209,7 @@ Found a vulnerability? Please report it privately; see [SECURITY.md](SECURITY.md
 ## Limitations
 
 - **One tab per link.** Create one link per tab.
+- **Links live as long as tabshare does.** A link can be set to last up to 7 days, but tabshare and its Chrome window must keep running, and the computer must stay awake. Restarting tabshare ends every link, and quick-tunnel addresses change. For multi-day sharing, use a [named tunnel](#configuration).
 - **Isolated shares are a single page.** Popups and new tabs are closed, and downloads are disabled. Viewers can't type an address; they can only follow links on the page.
 - **Mirror needs the tab in the foreground.** Chrome slows or pauses rendering for background tabs.
 - **Keyboard control uses an allowlist.** Typing, arrows, Tab and Enter work, plus Ctrl/Cmd + A, C, X, Y, Z. Viewers paste *their own* text with their usual paste shortcut.

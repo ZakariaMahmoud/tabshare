@@ -40,6 +40,7 @@ test('loadConfig reads env with safe fallbacks', () => {
   assert.equal(c.publicUrl, 'https://x.dev');
   assert.equal(c.tunnelEnabled, false);
   assert.equal(c.jpegQuality, 80);
+  assert.equal(c.limits.maxTtlMinutes, 7 * 24 * 60);
 });
 
 test('loadConfig clamps JPEG quality to the range Chrome accepts', () => {

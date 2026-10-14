@@ -31,6 +31,14 @@ function checkTypes(req) {
 
 const MIN_LIFETIME_MS = 60_000;
 
+/** 10080 → "7 days", 1440 → "1 day", 90 → "90 minutes". */
+export function formatDuration(minutes) {
+  const plural = (n, unit) => `${n} ${unit}${n === 1 ? '' : 's'}`;
+  if (minutes % 1440 === 0) return plural(minutes / 1440, 'day');
+  if (minutes % 60 === 0) return plural(minutes / 60, 'hour');
+  return plural(minutes, 'minute');
+}
+
 /** Resolves the absolute expiry from either `ttlMinutes` or an explicit `expiresAt` (epoch ms). */
 function resolveExpiry(body, limits, now) {
   const maxMs = limits.maxTtlMinutes * 60_000;
@@ -39,15 +47,15 @@ function resolveExpiry(body, limits, now) {
   }
   if (body.expiresAt === undefined) {
     const ttlMinutes = body.ttlMinutes ?? limits.defaultTtlMinutes;
-    if (!isInt(ttlMinutes, 1, limits.maxTtlMinutes)) {
-      return { error: `ttlMinutes must be an integer between 1 and ${limits.maxTtlMinutes}` };
-    }
+    if (!Number.isInteger(ttlMinutes)) return { error: 'the expiry must be a whole number of minutes' };
+    if (ttlMinutes < 1) return { error: 'the expiry must be at least 1 minute' };
+    if (ttlMinutes > limits.maxTtlMinutes) return { error: `a link can last at most ${formatDuration(limits.maxTtlMinutes)}` };
     return { expiresAt: now + ttlMinutes * 60_000 };
   }
   const { expiresAt } = body;
   if (!Number.isInteger(expiresAt)) return { error: 'expiresAt must be a timestamp in milliseconds' };
   if (expiresAt < now + MIN_LIFETIME_MS) return { error: 'expiry must be at least 1 minute in the future' };
-  if (expiresAt > now + maxMs) return { error: `expiry can be at most ${limits.maxTtlMinutes / 60} hours from now` };
+  if (expiresAt > now + maxMs) return { error: `a link can last at most ${formatDuration(limits.maxTtlMinutes)}` };
   return { expiresAt };
 }
 

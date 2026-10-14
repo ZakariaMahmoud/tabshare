@@ -30,7 +30,7 @@ const tabs = { list: async () => [{ id: 'abcdef012345', url: 'https://github.com
 let admin;
 let viewer;
 before(async () => {
-  admin = createAdminServer({ port: ADMIN, adminKey: KEY, isForbiddenUrl: (u) => u.includes(':7070'), manager, tabs, getUserBrowser: () => ({ isConnected: () => true }), getPublicUrl: () => 'https://p', log });
+  admin = createAdminServer({ port: ADMIN, adminKey: KEY, maxExpiryMinutes: 10080, isForbiddenUrl: (u) => u.includes(':7070'), manager, tabs, getUserBrowser: () => ({ isConnected: () => true }), getPublicUrl: () => 'https://p', log });
   viewer = createViewerServer({ port: VIEWER, manager, log });
   await Promise.all([admin.listen(), viewer.listen()]);
 });
@@ -74,7 +74,7 @@ test('admin hides tabshare’s own tabs from the tab list', async () => {
 
 test('admin lists status, tabs and cookie domains without cookie values', async () => {
   const status = await (await adminFetch('/api/status')).json();
-  assert.deepEqual(status.data, { publicUrl: 'https://p', chromeConnected: true });
+  assert.deepEqual(status.data, { publicUrl: 'https://p', chromeConnected: true, maxExpiryMinutes: 10080 });
   const tabsRes = await (await adminFetch('/api/tabs')).json();
   assert.equal(tabsRes.data[0].id, 'abcdef012345');
   const res = await adminFetch('/api/tabs/abcdef012345/cookie-domains');

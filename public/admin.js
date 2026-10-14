@@ -38,6 +38,10 @@ function el(tag, props = {}, children = []) {
 async function loadStatus() {
   try {
     const s = await api('/api/status');
+    if (Number.isInteger(s.maxExpiryMinutes) && s.maxExpiryMinutes !== maxExpiryMinutes) {
+      maxExpiryMinutes = s.maxExpiryMinutes;
+      refreshExpiryPicker();
+    }
     $('status').textContent = `${s.chromeConnected ? 'Chrome connected' : 'Chrome NOT connected — run `npm run chrome`'} · ${s.publicUrl ? `Public URL: ${s.publicUrl}` : 'No public URL yet'}`;
   } catch (err) {
     $('status').textContent = `Error: ${err.message}`;
@@ -136,14 +140,15 @@ function formatWhen(ms) {
     : d.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
-const MAX_EXPIRY_MS = 24 * 60 * 60_000;
+// The server's limit, from /api/status. The server validates regardless; this only guides the inputs.
+let maxExpiryMinutes = 7 * 24 * 60;
 
-/** Keeps the date picker within what the server accepts: 1 minute to 24 hours from now. */
+/** Keeps the date picker within what the server accepts: 1 minute up to the maximum from now. */
 function refreshExpiryPicker() {
   const picker = $('expires-at');
   const now = Date.now();
   picker.min = toLocalInput(now + 60_000);
-  picker.max = toLocalInput(now + MAX_EXPIRY_MS);
+  picker.max = toLocalInput(now + maxExpiryMinutes * 60_000);
   if (!picker.value) picker.value = toLocalInput(now + 60 * 60_000);
 }
 
@@ -153,7 +158,7 @@ const selectExpiry = (kind) => {
 
 function expiryRequest() {
   const kind = document.querySelector('input[name="expiry"]:checked').value;
-  if (kind === 'after') return { ttlMinutes: Number($('ttl').value) };
+  if (kind === 'after') return { ttlMinutes: Math.round(Number($('ttl').value) * Number($('ttl-unit').value)) };
   const at = new Date($('expires-at').value).getTime();
   if (!Number.isFinite(at)) throw new Error('Pick a date and time for the link to expire.');
   return { expiresAt: at };
@@ -285,6 +290,7 @@ $('create').addEventListener('click', createShare);
 $('expires-at').addEventListener('focus', refreshExpiryPicker);
 $('expires-at').addEventListener('input', () => selectExpiry('at'));
 $('ttl').addEventListener('input', () => selectExpiry('after'));
+$('ttl-unit').addEventListener('change', () => selectExpiry('after'));
 $('max-viewers').addEventListener('input', updateViewersHelp);
 refreshExpiryPicker();
 updateViewersHelp();

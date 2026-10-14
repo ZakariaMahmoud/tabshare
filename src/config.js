@@ -24,7 +24,7 @@ export function loadConfig(env = process.env) {
     viewport: Object.freeze({ width: 1280, height: 800 }),
     limits: Object.freeze({
       defaultTtlMinutes: 30,
-      maxTtlMinutes: 24 * 60,
+      maxTtlMinutes: 7 * 24 * 60, // 7 days
       maxViewers: 10,
     }),
   });

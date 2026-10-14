@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { buildShare, createShareStore, validateShareRequest } from '../src/shares.js';
+import { buildShare, createShareStore, formatDuration, validateShareRequest } from '../src/shares.js';
 
 const limits = { defaultTtlMinutes: 30, maxTtlMinutes: 1440, maxViewers: 10 };
 const tabId = 'abcdef012345';
@@ -43,9 +43,9 @@ const invalid = [
   [{ tabId, includeCookies: true, cookieDomains: Array(101).fill('a.com') }, /at most/],
   [{ tabId, includeCookies: true }, /at least one/],
   [{ tabId, mode: 'mirror', includeCookies: true, cookieDomains: ['a.com'] }, /isolated mode/],
-  [{ tabId, ttlMinutes: 0 }, /ttlMinutes/],
-  [{ tabId, ttlMinutes: 1441 }, /ttlMinutes/],
-  [{ tabId, ttlMinutes: 1.5 }, /ttlMinutes/],
+  [{ tabId, ttlMinutes: 0 }, /at least 1 minute/],
+  [{ tabId, ttlMinutes: 1441 }, /at most 1 day/],
+  [{ tabId, ttlMinutes: 1.5 }, /whole number/],
   [{ tabId, maxViewers: 11 }, /maxViewers/],
 ];
 for (const [body, pattern] of invalid) {
@@ -96,8 +96,26 @@ test('rejects bad expiry times', () => {
   };
   check({ expiresAt: now - 1 }, /at least 1 minute/);
   check({ expiresAt: now + 30_000 }, /at least 1 minute/);
-  check({ expiresAt: now + 25 * 60 * 60_000 }, /at most 24 hours/);
+  check({ expiresAt: now + 25 * 60 * 60_000 }, /at most 1 day/);
   check({ expiresAt: '2026-10-14T18:00' }, /timestamp/);
   check({ expiresAt: now + 1.5 }, /timestamp/);
   check({ expiresAt: now + 120_000, ttlMinutes: 5 }, /either/);
+});
+
+test('a 7-day limit allows a link to expire up to a week ahead', () => {
+  const week = { ...limits, maxTtlMinutes: 7 * 24 * 60 };
+  const now = 1_000_000;
+  assert.equal(validateShareRequest({ tabId, expiresAt: now + 6 * 24 * 60 * 60_000 }, week, now).ok, true);
+  assert.equal(validateShareRequest({ tabId, ttlMinutes: 7 * 24 * 60 }, week, now).ok, true);
+  const tooLate = validateShareRequest({ tabId, expiresAt: now + 8 * 24 * 60 * 60_000 }, week, now);
+  assert.match(tooLate.error, /at most 7 days/);
+  assert.match(validateShareRequest({ tabId, ttlMinutes: 7 * 24 * 60 + 1 }, week, now).error, /at most 7 days/);
+});
+
+test('formatDuration', () => {
+  assert.equal(formatDuration(10080), '7 days');
+  assert.equal(formatDuration(1440), '1 day');
+  assert.equal(formatDuration(120), '2 hours');
+  assert.equal(formatDuration(90), '90 minutes');
+  assert.equal(formatDuration(1), '1 minute');
 });

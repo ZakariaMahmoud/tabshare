@@ -92,6 +92,7 @@ async function main() {
     tabs,
     getUserBrowser: () => userBrowser,
     getPublicUrl: () => publicUrl,
+    maxExpiryMinutes: config.limits.maxTtlMinutes,
     log,
   });
   await listenOrExplain(viewer, config.viewerPort, 'TABSHARE_VIEWER_PORT');
